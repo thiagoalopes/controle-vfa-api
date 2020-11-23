@@ -12,4 +12,5 @@ class UsuarioPermissaoModel extends Model
     protected $table = 'usuario_permissao';
     protected $primaryKey = 'id_usuario_permissao';
     public $timestamps = false;
+    
 }

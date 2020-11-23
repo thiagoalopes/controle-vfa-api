@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers\Api\V1;
 
-use App\Http\Controllers\Controller;
-use App\Models\ParcelamentoModel;
 use Illuminate\Http\Request;
+use App\Models\ParcelamentoModel;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Validator;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class ParcelamentoController extends Controller
 {
@@ -21,7 +24,11 @@ class ParcelamentoController extends Controller
      */
     public function index()
     {
-        return response()->json(ParcelamentoModel::all());
+        if(Gate::any(['PARCELAMENTO_LER']))
+        {
+            return response()->json(ParcelamentoModel::all());
+        }
+        return response(null, 403);
     }
 
     /**
@@ -32,7 +39,24 @@ class ParcelamentoController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        if(Gate::any(['PARCELAMENTO_INSERIR']))
+        {
+            $validator = Validator::make(
+                $request->all(), ParcelamentoModel::rules(), ParcelamentoModel::messages());
+
+            if($validator->fails())
+            {
+                return response()->json($validator->errors(), 422);
+            }
+
+            $parcelamento = ParcelamentoModel::create(
+                $validator->valid()
+            );
+
+            return response(null, 201,
+                ['Location'=>route('parcelamento.show',['id'=>$parcelamento->id_parcelamento])]);
+        }
+        return response(null, 403);
     }
 
     /**
@@ -43,7 +67,18 @@ class ParcelamentoController extends Controller
      */
     public function show($id)
     {
-        //
+        if(Gate::any(['PARCELAMENTO_LER']))
+        {
+            $parcelamento = ParcelamentoModel::find($id);
+
+            if($parcelamento == null)
+            {
+                throw new NotFoundHttpException('Parcelamento não encontrado');
+            }
+
+            return response()->json($parcelamento, 200);
+        }
+        return response(null, 403);
     }
 
     /**
@@ -55,7 +90,29 @@ class ParcelamentoController extends Controller
      */
     public function update(Request $request, $id)
     {
-        //
+        if(Gate::any(['PARCELAMENTO_ATUALIZAR']))
+        {
+            $parcelamento = ParcelamentoModel::find($id);
+
+            if($parcelamento == null)
+            {
+                throw new NotFoundHttpException('Parcelamento não encontrado');
+            }
+
+            $validator = Validator::make(
+                $request->all(), ParcelamentoModel::rules(), ParcelamentoModel::messages());
+
+            if($validator->fails())
+            {
+                return response()->json($validator->errors(), 422);
+            }
+
+            $parcelamento->update(
+                $validator->valid()
+            );
+            return response()->json($parcelamento, 200);
+        }
+        return response(null, 403);
     }
 
     /**
@@ -66,6 +123,19 @@ class ParcelamentoController extends Controller
      */
     public function destroy($id)
     {
-        //
+        if(Gate::any(['PARCELAMENTO_DELETAR']))
+        {
+            $parcelamento = ParcelamentoModel::find($id);
+
+            if($parcelamento == null)
+            {
+                throw new NotFoundHttpException('Parcelamento não encontrado');
+            }
+
+            $parcelamento->delete();
+
+            return response(null, 200);
+        }
+        return response(null, 403);
     }
 }

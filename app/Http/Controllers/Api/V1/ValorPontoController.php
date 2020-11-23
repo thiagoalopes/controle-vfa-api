@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers\Api\V1;
 
-use App\Http\Controllers\Controller;
-use App\Models\ValorPontoModel;
 use Illuminate\Http\Request;
+use App\Models\ValorPontoModel;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Validator;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class ValorPontoController extends Controller
 {
@@ -21,17 +24,11 @@ class ValorPontoController extends Controller
      */
     public function index()
     {
-        return response()->json(ValorPontoModel::all());
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function create()
-    {
-        //
+        if(Gate::any(['VALOR_PONTO_LER']))
+        {
+            return response()->json(ValorPontoModel::all());
+        }
+        return response(null, 403);
     }
 
     /**
@@ -42,7 +39,24 @@ class ValorPontoController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        if(Gate::any(['VALOR_PONTO_INSERIR']))
+        {
+            $validator = Validator::make(
+                $request->all(), ValorPontoModel::rules(), ValorPontoModel::messages());
+
+            if($validator->fails())
+            {
+                return response()->json($validator->errors(), 422);
+            }
+
+            $valorPonto = ValorPontoModel::create(
+                $validator->valid()
+            );
+
+            return response(null, 201,
+                ['Location'=>route('valor_ponto.show',['id'=>$valorPonto->id_valor_ponto])]);
+        }
+        return response(null, 403);
     }
 
     /**
@@ -53,18 +67,18 @@ class ValorPontoController extends Controller
      */
     public function show($id)
     {
-        //
-    }
+        if(Gate::any(['VALOR_PONTO_LER']))
+        {
+            $valorPonto = ValorPontoModel::find($id);
 
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function edit($id)
-    {
-        //
+            if($valorPonto == null)
+            {
+                throw new NotFoundHttpException('Valor do ponto não encontrado');
+            }
+
+            return response()->json($valorPonto, 200);
+        }
+        return response(null, 403);
     }
 
     /**
@@ -76,7 +90,29 @@ class ValorPontoController extends Controller
      */
     public function update(Request $request, $id)
     {
-        //
+        if(Gate::any(['VALOR_PONTO_ATUALIZAR']))
+        {
+            $valorPonto = ValorPontoModel::find($id);
+
+            if($valorPonto == null)
+            {
+                throw new NotFoundHttpException('Valor do ponto não encontrado');
+            }
+
+            $validator = Validator::make(
+                $request->all(), $valorPonto::rules(), ValorPontoModel::messages());
+
+            if($validator->fails())
+            {
+                return response()->json($validator->errors(), 422);
+            }
+
+            $valorPonto->update(
+                $validator->valid()
+            );
+            return response()->json($valorPonto, 200);
+        }
+        return response(null, 403);
     }
 
     /**
@@ -87,6 +123,19 @@ class ValorPontoController extends Controller
      */
     public function destroy($id)
     {
-        //
+        if(Gate::any(['VALOR_PONTO_DELETAR']))
+        {
+            $valorPonto = ValorPontoModel::find($id);
+
+            if($valorPonto == null)
+            {
+                throw new NotFoundHttpException('Valor do ponto não encontrado');
+            }
+
+            $valorPonto->delete();
+
+            return response(null, 200);
+        }
+        return response(null, 403);
     }
 }

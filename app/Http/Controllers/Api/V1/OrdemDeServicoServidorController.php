@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers\Api\V1;
 
-use App\Http\Controllers\Controller;
-use App\Models\OrdemDeServicoServidorModel;
 use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Validator;
+use App\Models\OrdemDeServicoServidorModel;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class OrdemDeServicoServidorController extends Controller
 {
@@ -21,7 +24,11 @@ class OrdemDeServicoServidorController extends Controller
      */
     public function index()
     {
-        return response()->json(OrdemDeServicoServidorModel::all());
+        if(Gate::any(['ORDEM_SERVICO_SERVIDOR_LER']))
+        {
+            return response()->json(OrdemDeServicoServidorModel::all());
+        }
+        return response(null, 403);
     }
 
     /**
@@ -32,7 +39,24 @@ class OrdemDeServicoServidorController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        if(Gate::any(['ORDEM_SERVICO_SERVIDOR_INSERIR']))
+        {
+            $validator = Validator::make(
+                $request->all(), OrdemDeServicoServidorModel::rules(), OrdemDeServicoServidorModel::messages());
+
+            if($validator->fails())
+            {
+                return response()->json($validator->errors(), 422);
+            }
+
+            $ordemDeServicoServidor = OrdemDeServicoServidorModel::create(
+                $validator->valid()
+            );
+
+            return response(null, 201,
+                ['Location'=>route('ordem_servico_servidor.show',['id'=>$ordemDeServicoServidor->id_os_fte])]);
+        }
+        return response(null, 403);
     }
 
     /**
@@ -43,7 +67,18 @@ class OrdemDeServicoServidorController extends Controller
      */
     public function show($id)
     {
-        //
+        if(Gate::any(['ORDEM_SERVICO_SERVIDOR_LER']))
+        {
+            $ordemServicoServidor = OrdemDeServicoServidorModel::find($id);
+
+            if($ordemServicoServidor == null)
+            {
+                throw new NotFoundHttpException('Ordem de serviço do servidor não encontrada');
+            }
+
+            return response()->json($ordemServicoServidor, 200);
+        }
+        return response(null, 403);
     }
 
     /**
@@ -55,7 +90,29 @@ class OrdemDeServicoServidorController extends Controller
      */
     public function update(Request $request, $id)
     {
-        //
+        if(Gate::any(['ORDEM_SERVICO_SERVIDOR_ATUALIZAR']))
+        {
+            $ordemServicoServidor = OrdemDeServicoServidorModel::find($id);
+
+            if($ordemServicoServidor == null)
+            {
+                throw new NotFoundHttpException('Ordem de serviço não encontrada');
+            }
+
+            $validator = Validator::make(
+                $request->all(), OrdemDeServicoServidorModel::rules(), OrdemDeServicoServidorModel::messages());
+
+            if($validator->fails())
+            {
+                return response()->json($validator->errors(), 422);
+            }
+
+            $ordemServicoServidor->update(
+                $validator->valid()
+            );
+            return response()->json($ordemServicoServidor, 200);
+        }
+        return response(null, 403);
     }
 
     /**
@@ -66,6 +123,19 @@ class OrdemDeServicoServidorController extends Controller
      */
     public function destroy($id)
     {
-        //
+        if(Gate::any(['ORDEM_SERVICO_SERVIDOR_DELETAR']))
+        {
+            $ordemServicoServidor = OrdemDeServicoServidorModel::find($id);
+
+            if($ordemServicoServidor == null)
+            {
+                throw new NotFoundHttpException('Ordem de serviço do servidor não encontrada');
+            }
+
+            $ordemServicoServidor->delete();
+
+            return response(null, 200);
+        }
+        return response(null, 403);
     }
 }

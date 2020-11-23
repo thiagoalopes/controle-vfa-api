@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Api\V1;
 
 use Illuminate\Http\Request;
-use App\Models\Filter\Params;
 use App\Models\RelatorioModel;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Gate;
 
 class RelatorioController extends Controller
 {
@@ -22,29 +22,12 @@ class RelatorioController extends Controller
      */
     public function index()
     {
-        return response()->json(RelatorioModel::all());
-    }
+        if(Gate::any(['RELATORIO_LER']))
+        {
+            return response()->json(RelatorioModel::all());
+        }
+        return response(null, 403);
 
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function show($id)
-    {
-        //
     }
 
      /**
@@ -55,29 +38,11 @@ class RelatorioController extends Controller
      */
     public function search(Request $request)
     {
-        return RelatorioModel::search($request->all());
+        if(Gate::any(['RELATORIO_LER']))
+        {
+            return RelatorioModel::search($request->all());
+        }
+        return response(null, 403);
     }
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function update(Request $request, $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function destroy($id)
-    {
-        //
-    }
 }
